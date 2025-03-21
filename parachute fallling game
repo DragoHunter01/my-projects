@@ -1,0 +1,117 @@
+import pygame
+import random
+
+# Initialize pygame
+pygame.init()
+
+# Screen dimensions
+WIDTH, HEIGHT = 500, 700
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Falling Character Game")
+
+# Load images
+character_img = pygame.image.load("parachute.png")  # Updated image file name
+obstacle_img = pygame.image.load("obstacle.png")    # Replace with actual image file
+
+# Scale images
+character_img = pygame.transform.scale(character_img, (50, 50))
+obstacle_img = pygame.transform.scale(obstacle_img, (50, 50))
+
+# Colors
+WHITE = (255, 255, 255)
+
+# Game variables
+character_x = WIDTH // 2 - 25
+character_y = 50  # Start higher to simulate falling
+character_speed = 5
+
+gravity = 0.6  # Increased gravity for better falling effect
+velocity = 0
+jump_power = -10  # Jump effect
+
+game_active = True  # To track game state
+
+obstacles = []
+obstacle_speed = 5
+score = 0
+
+# Font
+font = pygame.font.Font(None, 36)
+
+# Clock
+clock = pygame.time.Clock()
+
+def create_obstacle():
+    x = random.randint(0, WIDTH - 50)
+    y = HEIGHT
+    return [x, y]
+
+while True:
+    screen.fill(WHITE)
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+        if event.type == pygame.KEYDOWN and game_active:
+            if event.key == pygame.K_SPACE:
+                velocity = jump_power  # Simulate a jump if needed
+    
+    if game_active:
+        # Character movement
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and character_x > 0:
+            character_x -= character_speed
+        if keys[pygame.K_RIGHT] and character_x < WIDTH - 50:
+            character_x += character_speed
+        
+        # Apply gravity
+        velocity += gravity
+        character_y += velocity
+        
+        # Prevent character from falling below screen
+        if character_y > HEIGHT - 50:
+            character_y = HEIGHT - 50
+            velocity = 0
+        
+        # Create obstacles
+        if random.randint(1, 40) == 1:
+            obstacles.append(create_obstacle())
+        
+        # Move obstacles upwards
+        for obstacle in obstacles:
+            obstacle[1] -= obstacle_speed
+            screen.blit(obstacle_img, (obstacle[0], obstacle[1]))
+        
+        # Remove obstacles that move out of screen
+        obstacles = [obs for obs in obstacles if obs[1] > -50]
+        
+        # Collision detection
+        for obstacle in obstacles:
+            if (character_x < obstacle[0] + 50 and character_x + 50 > obstacle[0] and
+                character_y < obstacle[1] + 50 and character_y + 50 > obstacle[1]):
+                game_active = False  # Stop the game on collision
+        
+        # Draw character
+        screen.blit(character_img, (character_x, character_y))
+        
+        # Display score
+        score += 1
+        text = font.render(f"Score: {score}", True, (0, 0, 0))
+        screen.blit(text, (10, 10))
+    else:
+        # Game over message
+        text = font.render("Game Over! Press R to Restart", True, (255, 0, 0))
+        screen.blit(text, (WIDTH // 4, HEIGHT // 2))
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_r]:  # Restart the game
+            character_x = WIDTH // 2 - 25
+            character_y = 50
+            velocity = 0
+            obstacles.clear()
+            score = 0
+            game_active = True
+    
+    # Refresh screen
+    pygame.display.flip()
+    clock.tick(30)
